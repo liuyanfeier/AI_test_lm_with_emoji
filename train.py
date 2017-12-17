@@ -240,17 +240,5 @@ def main(_):
           print("Saving model to %s." % FLAGS.save_path)
           sv.saver.save(session, FLAGS.save_path, global_step=sv.global_step)
       
-      elif FLAGS.mode == "test":      
-        if not FLAGS.save_path:
-          raise ValueError("Must set --save_path to data directory")
-
-
-        word2id = {}
-        with open(input_data+"/input_vocab", "r") as text:
-          for line in text:
-            words = line.split()
-            word2id[words[0]] = words[1]
-
-
 if __name__ == "__main__":
   tf.app.run()
