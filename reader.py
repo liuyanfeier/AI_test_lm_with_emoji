@@ -155,21 +155,32 @@ def test_data(data_path=None):
 
     test_path = os.path.join(data_path, "test.txt")
     vocab_path = os.path.join(data_path, "input_vocab")
-    print(test_path, vocab_path)
+    output_vocab_path = os.path.join(data_path, "output_vocab")
+    print(test_path, vocab_path, output_vocab_path)
 
     word2id = {}
     vocab_len = 0
-    emoji_list = []
     with open(vocab_path, "r") as text:
         for line in text:
             line = line.strip()
             vocab_len += 1
             words = line.split()
             word2id[words[0]] = int(words[1])
+
+    output_word2id = {}
+    output_vocab_len = 0
+    emoji_list = []
+    with open(output_vocab_path, "r") as text:
+        for line in text:
+            line = line.strip()
+            output_vocab_len += 1
+            words = line.split()
+            output_word2id[words[0]] = int(words[1])
             if words[0] in emoji.UNICODE_EMOJI:
                 emoji_list.append(int(words[1]))
-
+    
     test_list = []
+    output_test_list = []
     with open(test_path, "r") as text:
         for line in text:
             line = line.strip()
@@ -191,9 +202,14 @@ def test_data(data_path=None):
                             test_list.append(word2id["<unk>"])
                     else:
                         test_list.append(word2id[sent])
+                if output_word2id.get(sent) == None:
+                    output_test_list.append(output_word2id["<unk>"])
+                else:
+                    output_test_list.append(output_word2id[sent])
 
     #for word in test_list:
     #    print(word)
 
-    return test_list, vocab_len, emoji_list
+    print("output_vocab_len: ", output_vocab_len)
+    return test_list, output_test_list, vocab_len, emoji_list
 

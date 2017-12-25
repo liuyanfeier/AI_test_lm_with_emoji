@@ -135,19 +135,20 @@ def main(_):
   if not FLAGS.input_data:
     raise ValueError("Must set --input_data to data directory")
 
-  input_test_data, vocab_len, emoji_list = reader.test_data(FLAGS.input_data)
+  input_test_data, output_test_data, vocab_len, emoji_list = reader.test_data(FLAGS.input_data)
   w2v_matrix = reader.gen_w2v_matrix(vocab_len, FLAGS.input_data)
   print("len(emoji_list): ",  len(emoji_list))
   print("vocab_len: ",  vocab_len)
   #input_data = input_test_data
   #output_data[:-1] = input_test_data[1:]
   #output_data[-1] = input_test_data[0]
-  
+  print(input_test_data[0:100]) 
+  print(output_test_data[0:100]) 
   eval_config = model.TestConfig()
   initializer = tf.random_uniform_initializer(-eval_config.init_scale, eval_config.init_scale)
   with tf.Graph().as_default():
     with tf.name_scope("Test"): 
-      test_input = model.Input(config=eval_config, input_data=input_test_data, output_data=input_test_data, name="Test")
+      test_input = model.Input(config=eval_config, input_data=input_test_data, output_data=output_test_data, name="Test")
       with tf.variable_scope("Model", reuse=None, initializer=initializer):  
         mtest = model.Model(is_training=False, config=eval_config, input_=test_input, l2=False, w2v=w2v_matrix)
     
