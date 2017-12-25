@@ -16,7 +16,9 @@ python3 test.py --input_data input/ --save_path save
 
 把其中的lm模型放进save目录，将word2vec模型放进input目录
 将测试的文本命名为test.txt放进input目录
+
 最终input目录中有文件input_vocab    output_vocab    word2feat_512    test.txt 
+
 save目录中的文件为checkpoint    model.ckpt.data-00000-of-00001    model.ckpt.index
 
 最终结果为：
