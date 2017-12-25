@@ -4,6 +4,8 @@
 
 data_process文件是对原始语料进行清洗以及word2vec提取特征等。
 
+需要安装python库emoji，pip3 install emoji --upgrade
+
 主程序使用方法如下：
 python3 train.py --input_data data/input --output_data output --save_path save/emoji_512
 
