@@ -10,19 +10,33 @@ import tensorflow as tf
 import reader
 from tensorflow.python.client import device_lib
 
-class Config(object):
+class TestConfig(object):
   init_scale = 0.04
   learning_rate = 0.1
   max_grad_norm = 10
   num_layers = 2
-  num_steps = 35
+  num_steps = 1
   hidden_size = 1024
   max_epoch = 15
   keep_prob = 0.75
   lr_decay = 0.5
+  batch_size = 1
+  input_vocab_size = 29904
+  output_vocab_size = 28572
+
+class Config(object):
+  init_scale = 0.04
+  learning_rate =  0.0015625
+  max_grad_norm = 10
+  num_layers = 2
+  num_steps = 35
+  hidden_size = 1024
+  max_epoch = 2
+  keep_prob = 0.75
+  lr_decay = 0.5
   batch_size = 64
-  input_vocab_size = 28773
-  output_vocab_size = 27648
+  input_vocab_size = 29904
+  output_vocab_size = 28572
 
 class Input(object):
   def __init__(self, config, input_data, output_data, name=None):

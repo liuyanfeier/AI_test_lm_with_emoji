@@ -169,76 +169,104 @@ def train_epoch(session, model, eval_op=None, lr=0.0):
   return np.exp(costs / iters)
 
 def main(_):
-  if not FLAGS.output_data:
-    raise ValueError("Must set --output_data to data directory")
-  if not FLAGS.input_data:
-    raise ValueError("Must set --input_data to data directory")
-  #os.environ["CUDA_VISIBLE_DEVICES"] = '{}'.format(3)
+  if FLAGS.mode == "train": 
+    if not FLAGS.output_data:
+      raise ValueError("Must set --output_data to data directory")
+    if not FLAGS.input_data:
+      raise ValueError("Must set --input_data to data directory")
+    #os.environ["CUDA_VISIBLE_DEVICES"] = '{}'.format(3)
 
-  input_raw_data = reader.raw_data(FLAGS.input_data)
-  input_train_data, input_valid_data, input_test_data, vocab_len, _ = input_raw_data
-  w2v_matrix = reader.gen_w2v_matrix(vocab_len, FLAGS.input_data)
-  output_raw_data = reader.raw_data(FLAGS.output_data)
-  output_train_data, output_valid_data, output_test_data, _ , emoji_list = output_raw_data
+    input_raw_data = reader.raw_data(FLAGS.input_data)
+    input_train_data, input_valid_data, input_test_data, vocab_len, _ = input_raw_data
+    w2v_matrix = reader.gen_w2v_matrix(vocab_len, FLAGS.input_data)
+    output_raw_data = reader.raw_data(FLAGS.output_data)
+    output_train_data, output_valid_data, output_test_data, _ , emoji_list = output_raw_data
 
-  print("len(emoji_list): ",  len(emoji_list))
+    print("len(emoji_list): ",  len(emoji_list))
 
-  config = model.Config()
-  eval_config = model.Config()
-  eval_config.batch_size = 1
-  eval_config.num_steps = 1
+    config = model.Config()
+    eval_config = model.Config()
+    eval_config.batch_size = 1
+    eval_config.num_steps = 1
 
-  with tf.Graph().as_default():
-    initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
+    with tf.Graph().as_default():
+      initializer = tf.random_uniform_initializer(-config.init_scale, config.init_scale)
 
-    with tf.name_scope("Train"):
-      train_input = model.Input(config=config, input_data=input_train_data, output_data=output_train_data, name="TrainInput")
-      with tf.variable_scope("Model", reuse=None, initializer=initializer):
-        m = model.Model(is_training=True, config=config, input_=train_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
-      tf.summary.scalar("Training Loss", m.cost)
-      tf.summary.scalar("Learning Rate", m.lr)
+      with tf.name_scope("Train"):
+        train_input = model.Input(config=config, input_data=input_train_data, output_data=output_train_data, name="TrainInput")
+        with tf.variable_scope("Model", reuse=None, initializer=initializer):
+          m = model.Model(is_training=True, config=config, input_=train_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
+        tf.summary.scalar("Training Loss", m.cost)
+        tf.summary.scalar("Learning Rate", m.lr)
 
-    with tf.name_scope("Valid"):
-      valid_input = model.Input(config=config, input_data=input_valid_data, output_data=output_valid_data, name="ValidInput")
-      with tf.variable_scope("Model", reuse=True, initializer=initializer):
-        mvalid = model.Model(is_training=False, config=config, input_=valid_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
-      tf.summary.scalar("Validation Loss", mvalid.cost)
+      with tf.name_scope("Valid"):
+        valid_input = model.Input(config=config, input_data=input_valid_data, output_data=output_valid_data, name="ValidInput")
+        with tf.variable_scope("Model", reuse=True, initializer=initializer):
+          mvalid = model.Model(is_training=False, config=config, input_=valid_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
+        tf.summary.scalar("Validation Loss", mvalid.cost)
 
-    with tf.name_scope("Test"):
-      test_input = model.Input(
-          config=eval_config, input_data=input_test_data, output_data=output_test_data, name="TestInput")
-      with tf.variable_scope("Model", reuse=True, initializer=initializer):
-        mtest = model.Model(is_training=False, config=eval_config,
-                         input_=test_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
+      with tf.name_scope("Test"):
+        test_input = model.Input(
+            config=eval_config, input_data=input_test_data, output_data=output_test_data, name="TestInput")
+        with tf.variable_scope("Model", reuse=True, initializer=initializer):
+          mtest = model.Model(is_training=False, config=eval_config,
+                           input_=test_input, l2=FLAGS.l2_regular, w2v=w2v_matrix)
 
-    ppl = 2000.0
-    sv = tf.train.Supervisor(logdir=FLAGS.save_path)
-    config_proto = tf.ConfigProto(allow_soft_placement=False)
-    config_proto.gpu_options.allow_growth = True
-    with sv.managed_session(config=config_proto) as session:
-      if FLAGS.mode == "train": 
-        
-        lr_decay = 1.0
-        for i in range(config.max_epoch):
-          m.assign_lr(session, config.learning_rate * lr_decay)
+      ppl = 2000.0
+      sv = tf.train.Supervisor(logdir=FLAGS.save_path)
+      config_proto = tf.ConfigProto(allow_soft_placement=False)
+      config_proto.gpu_options.allow_growth = True
+      with sv.managed_session(config=config_proto) as session:
+          lr_decay = 1.0
+          for i in range(config.max_epoch):
+            m.assign_lr(session, config.learning_rate * lr_decay)
 
-          lr = session.run(m.lr)
-          print("Epoch: %d Learning rate: %f" % (i + 1, lr))
-          train_perplexity = train_epoch(session, m, eval_op=m.train_op, lr=lr)
-          print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
-          valid_perplexity = train_epoch(session, mvalid)
-          print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
+            lr = session.run(m.lr)
+            print("Epoch: %d Learning rate: %f" % (i + 1, lr))
+            train_perplexity = train_epoch(session, m, eval_op=m.train_op, lr=lr)
+            print("Epoch: %d Train Perplexity: %.3f" % (i + 1, train_perplexity))
+            valid_perplexity = train_epoch(session, mvalid)
+            print("Epoch: %d Valid Perplexity: %.3f" % (i + 1, valid_perplexity))
 
-          if i != 0 and (ppl - valid_perplexity) / valid_perplexity  < 0.02:
-            lr_decay = lr_decay * config.lr_decay
-          ppl = valid_perplexity  
-        #valid_perplexity = test_epoch(session, mvalid, emoji_list)
-        test_perplexity = test_epoch(session, mtest, emoji_list)
-        print("Test Perplexity: %.3f" % test_perplexity)
+            if i != 0 and (ppl - valid_perplexity) / valid_perplexity  < 0.02:
+              lr_decay = lr_decay * config.lr_decay
+            ppl = valid_perplexity  
+          #valid_perplexity = test_epoch(session, mvalid, emoji_list)
+          test_perplexity = test_epoch(session, mtest, emoji_list)
+          print("Test Perplexity: %.3f" % test_perplexity)
 
-        if FLAGS.save_path:
-          print("Saving model to %s." % FLAGS.save_path)
-          sv.saver.save(session, FLAGS.save_path, global_step=sv.global_step)
+          if FLAGS.save_path:
+            print("Saving model to %s." % FLAGS.save_path)
+            sv.saver.save(session, FLAGS.save_path, global_step=sv.global_step)
       
+  elif FLAGS.mode == "test":  
+    if not FLAGS.save_path:
+      raise ValueError("Must set --save_path to data directory")
+    if not FLAGS.input_data:
+      raise ValueError("Must set --input_data to data directory")
+
+    input_test_data, vocab_len, emoji_list = reader.test_data(FLAGS.input_data)
+    w2v_matrix = reader.gen_w2v_matrix(vocab_len, FLAGS.input_data)
+    
+    print("len(emoji_list): ",  len(emoji_list))
+
+    eval_config = model.TestConfig()
+    initializer = tf.random_uniform_initializer(-eval_config.init_scale, eval_config.init_scale)
+    with tf.name_scope("Test"):
+      test_input = model.Input(config=eval_config, input_data=input_test_data, output_data=input_test_data, name="TestInput")
+      with tf.variable_scope("Model", reuse=None, initializer=initializer):
+        mtest = model.Model(is_training=False, config=eval_config, input_=test_input, l2=False, w2v=w2v_matrix)
+
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth = True
+    with tf.Session(config=sess_config) as sess:
+      tf.global_variables_initializer().run()
+      saver = tf.train.Saver(tf.global_variables())
+      ckpt = tf.train.get_checkpoint_state(FLAGS.save_path)
+      if ckpt and ckpt.model_checkpoint_path:
+        print(ckpt, ckpt.model_checkpoint_path)
+        saver.restore(sess, ckpt.model_checkpoint_path)
+        test_perplexity = test_epoch(sess, mtest, emoji_list)
+    
 if __name__ == "__main__":
   tf.app.run()

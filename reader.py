@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import collections
 import os
+import re
 import sys
 import emoji
 import tensorflow as tf
@@ -119,3 +120,80 @@ def gen_w2v_matrix(vocab_len, input_data):
         w2v_matrix[int(_id)][i-1] = float(words[i])
 
   return w2v_matrix
+
+def has_numbers(inputString):
+    return bool(re.search(r'\d', inputString))
+
+def clean_str(line):
+    line = line.replace("`", "'").replace("‘", "'").replace("_", " ").replace("’","'").replace("“","\"").replace("”","\"").replace("^", "").replace("+", "").replace("-", "").replace("\*", "") 
+ 
+    #line = re.sub(r"[^A-Za-z0-9,\']", " ", line) 
+    line = re.sub(r"\.", " ", line)
+    line = re.sub(r"!", " ", line)
+    line = re.sub(r"\?", " ", line)
+    line = re.sub(r"\(", " ", line)
+    line = re.sub(r"\)", " ", line)
+    line = re.sub(r"\"", " ", line)
+    line = re.sub(r"\'s", " \'s", line)
+    line = re.sub(r"\'S", " \'S", line)
+    line = re.sub(r"\'m", " \'m", line)
+    line = re.sub(r"\'M", " \'M", line)
+    line = re.sub(r"\'ve", " \'ve", line)
+    line = re.sub(r"\'VE", " \'VE", line)
+    line = re.sub(r"n\'t", " n\'t", line)
+    line = re.sub(r"N\'T", " N\'T", line)
+    line = re.sub(r"\'re", " \'re", line)
+    line = re.sub(r"\'RE", " \'RE", line)
+    line = re.sub(r"\'d", " \'d", line)
+    line = re.sub(r"\'D", " \'D", line)
+    line = re.sub(r"\'ll", " \'ll", line)
+    line = re.sub(r"\'LL", " \'LL", line) 
+
+    return line
+
+def test_data(data_path=None):
+
+    test_path = os.path.join(data_path, "test.txt")
+    vocab_path = os.path.join(data_path, "input_vocab")
+    print(test_path, vocab_path)
+
+    word2id = {}
+    vocab_len = 0
+    emoji_list = []
+    with open(vocab_path, "r") as text:
+        for line in text:
+            line = line.strip()
+            vocab_len += 1
+            words = line.split()
+            word2id[words[0]] = int(words[1])
+            if words[0] in emoji.UNICODE_EMOJI:
+                emoji_list.append(int(words[1]))
+
+    test_list = []
+    with open(test_path, "r") as text:
+        for line in text:
+            line = line.strip()
+            line = clean_str(line)
+            line = ' '.join(line.split()) 
+            if (len(line)) < 2:
+                continue
+            print(line)
+            for sent in line.split():
+                if has_numbers(sent):
+                    test_list.append(word2id["<num>"])
+                elif sent == ",":
+                    test_list.append(word2id["<pun>"])
+                else:
+                    if word2id.get(sent) == None:
+                        if sent in emoji.UNICODE_EMOJI:
+                            test_list.append(word2id["<emoji>"])
+                        else:
+                            test_list.append(word2id["<unk>"])
+                    else:
+                        test_list.append(word2id[sent])
+
+    #for word in test_list:
+    #    print(word)
+
+    return test_list, vocab_len, emoji_list
+
